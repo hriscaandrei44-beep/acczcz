@@ -1,98 +1,68 @@
 <!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Impostor Room</title>
-<style>
-  body{font-family:system-ui;background:#0b1220;color:#e6eef8;padding:18px}
-  .card{max-width:880px;margin:auto;background:#0f1a2f;padding:18px;border-radius:10px}
-  input,button{font-size:16px;padding:8px;margin-top:8px;border-radius:8px;background:#1a2740;color:white;border:1px solid #394a6a}
-  button{cursor:pointer}
-  .word{font-size:30px;margin-top:18px;padding:16px;text-align:center;background:#1a2138;border-radius:12px}
-</style>
-</head>
-<body>
-<div class="card" id="app">
-  <h2>Create Room</h2>
-  <div>Main word:</div>
-  <input id="mainWord" value="APPLE">
-  <div>Special word:</div>
-  <input id="specialWord" value="ORANGE">
-  <div>Players:</div>
-  <input id="players" type="number" value="21">
-  <div>Special count:</div>
-  <input id="specialCount" type="number" value="2">
-  <button id="createBtn">Create Room</button>
-  <div id="createStatus"></div>
-  <div id="hostLinks"></div>
-
-  <hr>
-  <h2>Join Room</h2>
-  <div id="playerBox"></div>
-  <div id="wordArea"></div>
-  <div id="revealControls"></div>
+<h2>Join Room</h2>
+<div id="playerBox"></div>
+<div id="wordArea"></div>
+<div id="revealControls"></div>
 </div>
+
 
 <script>
 const createBtn = document.getElementById('createBtn');
 createBtn.onclick = async () => {
-  const mainWord = document.getElementById('mainWord').value;
-  const specialWord = document.getElementById('specialWord').value;
-  const players = Number(document.getElementById('players').value);
-  const specialCount = Number(document.getElementById('specialCount').value);
+const mainWord = document.getElementById('mainWord').value;
+const specialWord = document.getElementById('specialWord').value;
+const players = Number(document.getElementById('players').value);
+const specialCount = Number(document.getElementById('specialCount').value);
 
-  const r = await fetch('/api/create-room', {
-    method:'POST', headers:{'content-type':'application/json'},
-    body: JSON.stringify({mainWord, specialWord, players, specialCount})
-  });
-  const j = await r.json();
 
-  if(!r.ok){
-    createStatus.textContent = 'Error: ' + j.error;
-    return;
-  }
+const r = await fetch('/api/create-room', {
+method:'POST', headers:{'content-type':'application/json'},
+body: JSON.stringify({mainWord, specialWord, players, specialCount})
+});
+const j = await r.json();
 
-  createStatus.textContent = 'Room created: ' + j.roomId;
-  hostLinks.innerHTML = `Share this link: <br><input style="width:100%" value="${location.origin + j.joinUrl}" readonly><br>
-  Host Token:<br><input style="width:100%" value="${j.hostToken}" readonly>`;
+
+if(!r.ok){
+createStatus.textContent = 'Error: ' + j.error;
+return;
+}
+
+
+createStatus.textContent = 'Room created: ' + j.roomId;
+hostLinks.innerHTML = `Share this link: <br><input style="width:100%" value="${location.origin + j.joinUrl}" readonly><br>
+Host Token:<br><input style="width:100%" value="${j.hostToken}" readonly>`;
 };
+
 
 // ROOM JOIN DETECTION
 (function detectRoom(){
-  const m = location.pathname.match(/\/room\/(.+)/);
-  if(!m) return;
-  const roomId = m[1];
-  playerBox.innerHTML = `<button id="joinbtn">Join Room</button>`;
-  document.getElementById('joinbtn').onclick = ()=> joinRoom(roomId);
+const m = location.pathname.match(/\/room\/(.+)/);
+if(!m) return;
+const roomId = m[1];
+playerBox.innerHTML = `<button id=\"joinbtn\">Join Room</button>`;
+document.getElementById('joinbtn').onclick = ()=> joinRoom(roomId);
 })();
 
+
 async function joinRoom(roomId){
-  const r = await fetch(`/api/room/${roomId}/join`,{method:'POST'});
-  const j = await r.json();
-  if(!r.ok){ alert(j.error); return; }
+const r = await fetch(`/api/room/${roomId}/join`,{method:'POST'});
+const j = await r.json();
+if(!r.ok){ alert(j.error); return; }
 
-  sessionStorage.setItem('token', j.token);
 
-  if(j.revealed) showWord(j.word);
-  else waitForReveal(j.token);
+sessionStorage.setItem('token', j.token);
+
+
+if(j.revealed) showWord(j.word);
+else waitForReveal(j.token);
 }
+
 
 async function waitForReveal(token){
-  wordArea.innerHTML = `<div class='word'>Waiting for reveal…</div>`;
-  const t = setInterval(async()=>{
-    const r = await fetch(`/api/player/${token}/status`);
-    const j = await r.json();
-    if(j.revealed){
-      clearInterval(t);
-      showWord(j.word);
-    }
-  }, 1500);
-}
-
-function showWord(w){
-  wordArea.innerHTML = `<div class='word'>${w}</div>`;
-}
-</script>
-</body>
-</html>
+wordArea.innerHTML = `<div class='word'>Waiting for reveal…</div>`;
+const t = setInterval(async()=>{
+const r = await fetch(`/api/player/${token}/status`);
+const j = await r.json();
+if(j.revealed){
+clearInterval(t);
+showWord(j.word);
